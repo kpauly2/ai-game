@@ -13,6 +13,10 @@ const MOVE_SPEED = 5;
 let cameraX = 0;
 const keys = {};
 
+// Player animation state
+let playerFrame = 0; // 0 or 1
+let lastPlayerX = 100; // initial player x
+
 const player = {
     x: 100,
     y: canvas.height - GROUND_HEIGHT - PLAYER_HEIGHT,
@@ -21,16 +25,27 @@ const player = {
     onGround: false
 };
 
+// Load player images
+const playerImages = [
+    new Image(),
+    new Image()
+];
+playerImages[0].src = 'babywalk1.png';
+playerImages[1].src = 'babywalk2.png';
+
 // Input handling
 window.addEventListener('keydown', e => keys[e.key] = true);
 window.addEventListener('keyup', e => keys[e.key] = false);
 
 function updatePlayer() {
     // Horizontal movement
+    let moved = false;
     if (keys['ArrowLeft']) {
         player.vx = -MOVE_SPEED;
+        moved = true;
     } else if (keys['ArrowRight']) {
         player.vx = MOVE_SPEED;
+        moved = true;
     } else {
         player.vx = 0;
     }
@@ -58,6 +73,11 @@ function updatePlayer() {
     } else if (player.x < cameraX + 100) {
         cameraX = Math.max(0, player.x - 100);
     }
+    // Animation: toggle frame if player moved horizontally
+    if (moved && player.x !== lastPlayerX) {
+        playerFrame = 1 - playerFrame;
+    }
+    lastPlayerX = player.x;
 }
 
 function drawGround() {
@@ -66,8 +86,28 @@ function drawGround() {
 }
 
 function drawPlayer() {
-    ctx.fillStyle = '#f44';
-    ctx.fillRect(player.x - cameraX, player.y, PLAYER_WIDTH, PLAYER_HEIGHT);
+    // Draw animated player sprite with aspect ratio preserved and enlarged
+    const img = playerImages[playerFrame];
+    const desiredHeight = PLAYER_HEIGHT * 2; // Double the original height
+    if (img.complete && img.naturalWidth && img.naturalHeight) {
+        const scale = desiredHeight / img.naturalHeight;
+        const drawWidth = img.naturalWidth * scale;
+        // Pixel art: disable smoothing
+        const prevSmoothing = ctx.imageSmoothingEnabled;
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(
+            img,
+            player.x - cameraX,
+            player.y - (desiredHeight - PLAYER_HEIGHT), // adjust Y so feet stay on ground
+            drawWidth,
+            desiredHeight
+        );
+        ctx.imageSmoothingEnabled = prevSmoothing;
+    } else {
+        // fallback: draw a rectangle if image not loaded
+        ctx.fillStyle = '#f44';
+        ctx.fillRect(player.x - cameraX, player.y - PLAYER_HEIGHT, PLAYER_WIDTH, desiredHeight);
+    }
 }
 
 // Draw a kitchen background (cartoon style, aligned with ground)
