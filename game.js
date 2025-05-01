@@ -301,9 +301,10 @@ function drawKitchenBackground() {
     // Draw parent image to the right of the block tower
     const parentImg1 = parentImages[blockTowerParentIdx];
     if (parentImg1.complete && parentImg1.naturalWidth && parentImg1.naturalHeight) {
-        const scale = 90 / parentImg1.naturalHeight; // 90px tall
+        const parentHeight = 240; // at least 2x baby height
+        const scale = parentHeight / parentImg1.naturalHeight;
         const imgW = parentImg1.naturalWidth * scale;
-        ctx.drawImage(parentImg1, towerScreenX + blockTower.width + 20, towerScreenY + 30, imgW, 90);
+        ctx.drawImage(parentImg1, towerScreenX + blockTower.width + 20, towerScreenY + 30 - (parentHeight - blockTower.height), imgW, parentHeight);
     }
     ctx.restore();
 
@@ -354,9 +355,10 @@ function drawKitchenBackground() {
     // Draw parent image to the right of the bucket
     const parentImg2 = parentImages[bucketParentIdx];
     if (parentImg2.complete && parentImg2.naturalWidth && parentImg2.naturalHeight) {
-        const scale = 90 / parentImg2.naturalHeight;
+        const parentHeight = 240;
+        const scale = parentHeight / parentImg2.naturalHeight;
         const imgW = parentImg2.naturalWidth * scale;
-        ctx.drawImage(parentImg2, bucketScreenX + bucket.width + 20, bucketScreenY, imgW, 90);
+        ctx.drawImage(parentImg2, bucketScreenX + bucket.width + 20, bucketScreenY - (parentHeight - bucket.height), imgW, parentHeight);
     }
     ctx.restore();
 
