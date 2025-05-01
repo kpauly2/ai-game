@@ -304,7 +304,7 @@ function drawKitchenBackground() {
         const parentHeight = 240; // at least 2x baby height
         const scale = parentHeight / parentImg1.naturalHeight;
         const imgW = parentImg1.naturalWidth * scale;
-        ctx.drawImage(parentImg1, towerScreenX + blockTower.width + 20, towerScreenY + 30 - (parentHeight - blockTower.height), imgW, parentHeight);
+        ctx.drawImage(parentImg1, towerScreenX + blockTower.width + 20, canvas.height - GROUND_HEIGHT - parentHeight, imgW, parentHeight);
     }
     ctx.restore();
 
