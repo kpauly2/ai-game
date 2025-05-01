@@ -65,6 +65,18 @@ const playerImages = [
 playerImages[0].src = 'babywalk1.png';
 playerImages[1].src = 'babywalk2.png';
 
+// Load parent images
+const parentImages = [
+    new Image(), // mama
+    new Image()  // dada
+];
+parentImages[0].src = 'mama.png';
+parentImages[1].src = 'dada.png';
+
+// Randomly assign a parent to bucket and block tower (0: mama, 1: dada)
+const blockTowerParentIdx = Math.random() < 0.5 ? 0 : 1;
+const bucketParentIdx = Math.random() < 0.5 ? 0 : 1;
+
 // Input handling
 document.addEventListener('keydown', (e) => {
     keys[e.key] = true;
@@ -286,6 +298,13 @@ function drawKitchenBackground() {
             ctx.strokeRect(towerScreenX + i * 30, towerScreenY + 90, 30, 40);
         }
     }
+    // Draw parent image to the right of the block tower
+    const parentImg1 = parentImages[blockTowerParentIdx];
+    if (parentImg1.complete && parentImg1.naturalWidth && parentImg1.naturalHeight) {
+        const scale = 90 / parentImg1.naturalHeight; // 90px tall
+        const imgW = parentImg1.naturalWidth * scale;
+        ctx.drawImage(parentImg1, towerScreenX + blockTower.width + 20, towerScreenY + 30, imgW, 90);
+    }
     ctx.restore();
 
     // Bucket (interactable)
@@ -331,6 +350,13 @@ function drawKitchenBackground() {
         ctx.fill();
         ctx.globalAlpha = 1.0;
         ctx.restore();
+    }
+    // Draw parent image to the right of the bucket
+    const parentImg2 = parentImages[bucketParentIdx];
+    if (parentImg2.complete && parentImg2.naturalWidth && parentImg2.naturalHeight) {
+        const scale = 90 / parentImg2.naturalHeight;
+        const imgW = parentImg2.naturalWidth * scale;
+        ctx.drawImage(parentImg2, bucketScreenX + bucket.width + 20, bucketScreenY, imgW, 90);
     }
     ctx.restore();
 
