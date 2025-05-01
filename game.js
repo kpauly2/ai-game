@@ -55,6 +55,7 @@ function scheduleParentTurn(parent) {
     const minMs = 2000, maxMs = 8000;
     const nextInterval = Math.random() * (maxMs - minMs) + minMs;
     setTimeout(() => {
+        if (gameOver) return; // Stop turning if game is over
         if (parent === 'block') {
             blockTowerParentTurned = !blockTowerParentTurned;
             scheduleParentTurn('block');
@@ -439,14 +440,19 @@ function draw() {
     if (gameOver || performance.now() < badBabyMessageUntil) {
         ctx.save();
         ctx.font = 'bold 60px sans-serif';
-        ctx.fillStyle = '#f44';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.shadowColor = '#fff';
-        ctx.shadowBlur = 10;
+        // BAD BABY with white outline
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = '#fff';
+        ctx.strokeText('BAD BABY', canvas.width / 2, canvas.height / 2);
+        ctx.fillStyle = '#f44';
         ctx.fillText('BAD BABY', canvas.width / 2, canvas.height / 2);
+        // refresh to play again with white outline
         ctx.font = 'bold 32px sans-serif';
-        ctx.shadowBlur = 0;
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = '#fff';
+        ctx.strokeText('refresh to play again', canvas.width / 2, canvas.height / 2 + 60);
         ctx.fillStyle = '#222';
         ctx.fillText('refresh to play again', canvas.width / 2, canvas.height / 2 + 60);
         ctx.restore();
