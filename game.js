@@ -4,8 +4,8 @@ const ctx = canvas.getContext('2d');
 // Game constants
 const GRAVITY = 0.7;
 const GROUND_HEIGHT = 60;
-const PLAYER_WIDTH = 40;
-const PLAYER_HEIGHT = 60;
+const PLAYER_WIDTH = 120;
+const PLAYER_HEIGHT = 120;
 const SCROLL_EDGE = 350;
 const MOVE_SPEED = 5;
 
@@ -15,7 +15,7 @@ const keys = {};
 
 // Player animation state
 let playerFrame = 0; // 0 or 1
-let lastPlayerX = 100; // initial player x
+let lastPlayerX = 0; // initial player x
 let playerLastFrameSwitch = performance.now(); // last frame switch timestamp
 const PLAYER_FRAME_INTERVAL = 500; // ms
 let playerFacingLeft = false;
@@ -39,10 +39,10 @@ const blockTower = {
 
 // Bucket state
 const bucket = {
-    x: 900, // moved to the right
+    x: 1200, // right of block tower
     y: 0, // set in updatePlayer
-    width: 80, // twice the size
-    height: 80, // twice the size
+    width: 80, // square bucket
+    height: 80, // square bucket
     fallen: false
 };
 
@@ -100,6 +100,39 @@ const playerImages = [
 playerImages[0].src = 'babywalk1.png';
 playerImages[1].src = 'babywalk2.png';
 
+// Utility: Get the actual bounding box of the player for collision/interactions
+function getPlayerBoundingBox() {
+    // The player sprite is drawn larger than the logical box, with feet aligned to player.y + PLAYER_HEIGHT
+    // To match the visual, align the interaction box with the drawn sprite
+    const desiredHeight = PLAYER_HEIGHT; // matches drawPlayer
+    const drawWidth = PLAYER_WIDTH;     // scale width proportionally
+    return {
+        left: player.x,
+        right: player.x + PLAYER_WIDTH,
+        top: player.y - (desiredHeight - PLAYER_HEIGHT),
+        bottom: player.y + PLAYER_HEIGHT
+    };
+}
+
+// Utility: Get the actual bounding box of a rectangular item
+function getRectBoundingBox(item) {
+    return {
+        left: item.x,
+        right: item.x + item.width,
+        top: item.y,
+        bottom: item.y + item.height
+    };
+}
+
+function isOverlapping(a, b) {
+    return (
+        a.right > b.left &&
+        a.left < b.right &&
+        a.bottom > b.top &&
+        a.top < b.bottom
+    );
+}
+
 // Load parent images
 const parentImages = [
     new Image(), // mama
@@ -116,15 +149,12 @@ const bucketParentIdx = Math.random() < 0.5 ? 0 : 1;
 document.addEventListener('keydown', (e) => {
     if (gameOver) return;
     keys[e.key] = true;
-    // Block tower interaction (spacebar, only on initial press and when overlapping)
+    // Block tower interaction
     if ((e.key === ' ' || e.code === 'Space') && !blockTower.fallen && !keys._spaceHandled) {
         blockTower.y = canvas.height - GROUND_HEIGHT - blockTower.height;
-        if (
-            player.x + PLAYER_WIDTH > blockTower.x &&
-            player.x < blockTower.x + blockTower.width &&
-            player.y + PLAYER_HEIGHT > blockTower.y &&
-            player.y < blockTower.y + blockTower.height
-        ) {
+        const playerBox = getPlayerBoundingBox();
+        const towerBox = getRectBoundingBox(blockTower);
+        if (isOverlapping(playerBox, towerBox)) {
             blockTower.fallen = true;
             blockTowerMessValid = !blockTowerParentTurned;
             if (!blockTowerMessValid) showBadBabyMessage();
@@ -133,12 +163,9 @@ document.addEventListener('keydown', (e) => {
     }
     // Bucket interaction
     if ((e.key === ' ' || e.code === 'Space') && !bucket.fallen) {
-        if (
-            player.x + PLAYER_WIDTH > bucket.x &&
-            player.x < bucket.x + bucket.width &&
-            player.y + PLAYER_HEIGHT > bucket.y &&
-            player.y < bucket.y + bucket.height
-        ) {
+        const playerBox = getPlayerBoundingBox();
+        const bucketBox = getRectBoundingBox(bucket);
+        if (isOverlapping(playerBox, bucketBox)) {
             bucket.fallen = true;
             bucketMessValid = !bucketParentTurned;
             if (!bucketMessValid) showBadBabyMessage();
@@ -216,7 +243,7 @@ function drawGround() {
 function drawPlayer() {
     // Draw animated player sprite with aspect ratio preserved and enlarged
     const img = playerImages[playerFrame];
-    const desiredHeight = PLAYER_HEIGHT * 2; // Double the original height
+    const desiredHeight = PLAYER_HEIGHT;
     let drawWidth = PLAYER_WIDTH;
     let drawHeight = desiredHeight;
     let drawX = player.x - cameraX;
@@ -319,7 +346,7 @@ function drawKitchenBackground() {
     ctx.fillRect(tableX + tableWidth - 70, tableTopY + tableHeight, 30, 120); // right leg
 
     // Block tower (interactable)
-    const towerScreenX = blockTower.x - bgOffset;
+    const towerScreenX = blockTower.x - cameraX;
     const towerScreenY = blockTower.y;
     ctx.save();
     if (!blockTower.fallen) {
@@ -359,47 +386,31 @@ function drawKitchenBackground() {
     }
     ctx.restore();
 
-    // Bucket (interactable)
-    const bucketScreenX = bucket.x - bgOffset;
+    // Bucket (interactable, square, no circles)
+    const bucketScreenX = bucket.x - cameraX;
     const bucketScreenY = bucket.y;
     ctx.save();
     if (!bucket.fallen) {
-        // Upright bucket
-        ctx.fillStyle = '#b0c4de';
-        ctx.beginPath();
-        ctx.ellipse(bucketScreenX + 40, bucketScreenY + 60, 40, 20, 0, 0, Math.PI * 2);
-        ctx.fill();
+        // Upright square bucket (filled)
         ctx.fillStyle = '#4682b4';
-        ctx.fillRect(bucketScreenX, bucketScreenY + 20, 80, 50);
-        ctx.strokeStyle = '#333';
-        ctx.strokeRect(bucketScreenX, bucketScreenY + 20, 80, 50);
-        ctx.beginPath();
-        ctx.ellipse(bucketScreenX + 40, bucketScreenY + 20, 40, 16, 0, 0, Math.PI * 2);
-        ctx.stroke();
+        ctx.fillRect(bucketScreenX, bucketScreenY, bucket.width, bucket.height);
+        ctx.strokeStyle = '#222';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(bucketScreenX, bucketScreenY, bucket.width, bucket.height);
     } else {
-        // Fallen bucket (tipped right) and water
+        // Fallen bucket (tipped on its side, empty)
         ctx.save();
-        ctx.translate(bucketScreenX + 40, bucketScreenY + 80);
-        ctx.rotate(-Math.PI / 4);
-        ctx.fillStyle = '#b0c4de';
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 40, 20, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#4682b4';
-        ctx.fillRect(-40, -30, 80, 50);
-        ctx.strokeStyle = '#333';
-        ctx.strokeRect(-40, -30, 80, 50);
-        ctx.beginPath();
-        ctx.ellipse(0, -30, 40, 16, 0, 0, Math.PI * 2);
-        ctx.stroke();
+        ctx.translate(bucketScreenX + bucket.width / 2, bucketScreenY + bucket.height / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.strokeStyle = '#222';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(-bucket.height / 2, -bucket.width / 2, bucket.width, bucket.height);
         ctx.restore();
         // Water puddle
         ctx.save();
         ctx.globalAlpha = 0.5;
         ctx.fillStyle = '#00bfff';
-        ctx.beginPath();
-        ctx.ellipse(bucketScreenX + 80, bucketScreenY + bucket.height + 20, 60, 24, 0, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillRect(bucketScreenX + bucket.width, bucketScreenY + bucket.height - 15, 40, 20);
         ctx.globalAlpha = 1.0;
         ctx.restore();
     }
@@ -431,6 +442,47 @@ function drawKitchenBackground() {
     ctx.restore();
 }
 
+function drawDebugBoundingBoxes() {
+    // Draw player bounding box
+    const playerBox = getPlayerBoundingBox();
+    ctx.save();
+    ctx.strokeStyle = 'lime';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(
+        playerBox.left - cameraX,
+        playerBox.top,
+        playerBox.right - playerBox.left,
+        playerBox.bottom - playerBox.top
+    );
+    ctx.restore();
+
+    // Draw block tower bounding box
+    const towerBox = getRectBoundingBox(blockTower);
+    ctx.save();
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(
+        towerBox.left - cameraX,
+        towerBox.top,
+        towerBox.right - towerBox.left,
+        towerBox.bottom - towerBox.top
+    );
+    ctx.restore();
+
+    // Draw bucket bounding box
+    const bucketBox = getRectBoundingBox(bucket);
+    ctx.save();
+    ctx.strokeStyle = 'blue';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(
+        bucketBox.left - cameraX,
+        bucketBox.top,
+        bucketBox.right - bucketBox.left,
+        bucketBox.bottom - bucketBox.top
+    );
+    ctx.restore();
+}
+
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawKitchenBackground();
@@ -457,6 +509,7 @@ function draw() {
         ctx.fillText('refresh to play again', canvas.width / 2, canvas.height / 2 + 60);
         ctx.restore();
     }
+    drawDebugBoundingBoxes();
 }
 
 function gameLoop() {
