@@ -18,6 +18,7 @@ let playerFrame = 0; // 0 or 1
 let lastPlayerX = 100; // initial player x
 let playerLastFrameSwitch = performance.now(); // last frame switch timestamp
 const PLAYER_FRAME_INTERVAL = 500; // ms
+let playerFacingLeft = false;
 
 const player = {
     x: 100,
@@ -45,9 +46,11 @@ function updatePlayer() {
     if (keys['ArrowLeft']) {
         player.vx = -MOVE_SPEED;
         moved = true;
+        playerFacingLeft = true;
     } else if (keys['ArrowRight']) {
         player.vx = MOVE_SPEED;
         moved = true;
+        playerFacingLeft = false;
     } else {
         player.vx = 0;
     }
@@ -101,13 +104,26 @@ function drawPlayer() {
         const scale = desiredHeight / img.naturalHeight;
         const drawWidth = img.naturalWidth * scale;
         ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(
-            img,
-            player.x - cameraX,
-            player.y - (desiredHeight - PLAYER_HEIGHT), // adjust Y so feet stay on ground
-            drawWidth,
-            desiredHeight
-        );
+        if (playerFacingLeft) {
+            ctx.save();
+            ctx.scale(-1, 1);
+            ctx.drawImage(
+                img,
+                -(player.x - cameraX + drawWidth),
+                player.y - (desiredHeight - PLAYER_HEIGHT),
+                drawWidth,
+                desiredHeight
+            );
+            ctx.restore();
+        } else {
+            ctx.drawImage(
+                img,
+                player.x - cameraX,
+                player.y - (desiredHeight - PLAYER_HEIGHT),
+                drawWidth,
+                desiredHeight
+            );
+        }
     } else {
         // fallback: draw a rectangle if image not loaded
         ctx.fillStyle = '#f44';
