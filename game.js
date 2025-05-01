@@ -92,8 +92,6 @@ function drawPlayer() {
     if (img.complete && img.naturalWidth && img.naturalHeight) {
         const scale = desiredHeight / img.naturalHeight;
         const drawWidth = img.naturalWidth * scale;
-        // Pixel art: disable smoothing
-        const prevSmoothing = ctx.imageSmoothingEnabled;
         ctx.imageSmoothingEnabled = false;
         ctx.drawImage(
             img,
@@ -102,7 +100,6 @@ function drawPlayer() {
             drawWidth,
             desiredHeight
         );
-        ctx.imageSmoothingEnabled = prevSmoothing;
     } else {
         // fallback: draw a rectangle if image not loaded
         ctx.fillStyle = '#f44';
