@@ -509,7 +509,7 @@ function draw() {
         ctx.fillText('refresh to play again', canvas.width / 2, canvas.height / 2 + 60);
         ctx.restore();
     }
-    drawDebugBoundingBoxes();
+    // drawDebugBoundingBoxes();
 }
 
 function gameLoop() {
