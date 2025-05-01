@@ -82,6 +82,14 @@ function messCount() {
     return count;
 }
 
+// BAD BABY message state
+let badBabyMessageUntil = 0;
+
+function showBadBabyMessage() {
+    const duration = 1000 + Math.random() * 1000; // 1-2 seconds
+    badBabyMessageUntil = performance.now() + duration;
+}
+
 // Load player images
 const playerImages = [
     new Image(),
@@ -116,6 +124,7 @@ document.addEventListener('keydown', (e) => {
         ) {
             blockTower.fallen = true;
             blockTowerMessValid = !blockTowerParentTurned;
+            if (!blockTowerMessValid) showBadBabyMessage();
         }
         keys._spaceHandled = true;
     }
@@ -129,6 +138,7 @@ document.addEventListener('keydown', (e) => {
         ) {
             bucket.fallen = true;
             bucketMessValid = !bucketParentTurned;
+            if (!bucketMessValid) showBadBabyMessage();
         }
     }
 });
@@ -422,6 +432,18 @@ function draw() {
     drawKitchenBackground();
     drawGround();
     drawPlayer();
+    // Draw BAD BABY message if needed
+    if (performance.now() < badBabyMessageUntil) {
+        ctx.save();
+        ctx.font = 'bold 60px sans-serif';
+        ctx.fillStyle = '#f44';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = '#fff';
+        ctx.shadowBlur = 10;
+        ctx.fillText('BAD BABY', canvas.width / 2, canvas.height / 2);
+        ctx.restore();
+    }
 }
 
 function gameLoop() {
