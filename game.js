@@ -28,6 +28,35 @@ const player = {
     onGround: false
 };
 
+// Block tower state
+const blockTower = {
+    x: 650, // world coordinate (not screen)
+    y: 0,   // will be set based on ground
+    width: 40,
+    height: 120,
+    fallen: false
+};
+
+// Bucket state
+const bucket = {
+    x: 900, // moved to the right
+    y: 0, // set in updatePlayer
+    width: 80, // twice the size
+    height: 80, // twice the size
+    fallen: false
+};
+
+function isMess() {
+    return blockTower.fallen || bucket.fallen;
+}
+
+function messCount() {
+    let count = 0;
+    if (blockTower.fallen) count++;
+    if (bucket.fallen) count++;
+    return count;
+}
+
 // Load player images
 const playerImages = [
     new Image(),
@@ -37,8 +66,39 @@ playerImages[0].src = 'babywalk1.png';
 playerImages[1].src = 'babywalk2.png';
 
 // Input handling
-window.addEventListener('keydown', e => keys[e.key] = true);
-window.addEventListener('keyup', e => keys[e.key] = false);
+document.addEventListener('keydown', (e) => {
+    keys[e.key] = true;
+    // Block tower interaction (spacebar, only on initial press and when overlapping)
+    if ((e.key === ' ' || e.code === 'Space') && !blockTower.fallen && !keys._spaceHandled) {
+        blockTower.y = canvas.height - GROUND_HEIGHT - blockTower.height;
+        if (
+            player.x + PLAYER_WIDTH > blockTower.x &&
+            player.x < blockTower.x + blockTower.width &&
+            player.y + PLAYER_HEIGHT > blockTower.y &&
+            player.y < blockTower.y + blockTower.height
+        ) {
+            blockTower.fallen = true;
+        }
+        keys._spaceHandled = true;
+    }
+    // Bucket interaction
+    if ((e.key === ' ' || e.code === 'Space') && !bucket.fallen) {
+        if (
+            player.x + PLAYER_WIDTH > bucket.x &&
+            player.x < bucket.x + bucket.width &&
+            player.y + PLAYER_HEIGHT > bucket.y &&
+            player.y < bucket.y + bucket.height
+        ) {
+            bucket.fallen = true;
+        }
+    }
+});
+document.addEventListener('keyup', (e) => {
+    keys[e.key] = false;
+    if (e.key === ' ' || e.code === 'Space') {
+        keys._spaceHandled = false;
+    }
+});
 
 function updatePlayer() {
     // Horizontal movement
@@ -64,7 +124,7 @@ function updatePlayer() {
         player.x = WALL_WIDTH;
         if (player.vx < 0) player.vx = 0;
     }
-    // Ground collision
+    // Only ground collision
     if (player.y + PLAYER_HEIGHT >= canvas.height - GROUND_HEIGHT) {
         player.y = canvas.height - GROUND_HEIGHT - PLAYER_HEIGHT;
         player.vy = 0;
@@ -72,6 +132,10 @@ function updatePlayer() {
     } else {
         player.onGround = false;
     }
+    // Block tower interaction: now handled in keydown event
+    blockTower.y = canvas.height - GROUND_HEIGHT - blockTower.height;
+    // Bucket position
+    bucket.y = canvas.height - GROUND_HEIGHT - bucket.height;
     // Side-scrolling camera
     if (player.x > cameraX + SCROLL_EDGE) {
         cameraX = player.x - SCROLL_EDGE;
@@ -100,8 +164,13 @@ function drawPlayer() {
     // Draw animated player sprite with aspect ratio preserved and enlarged
     const img = playerImages[playerFrame];
     const desiredHeight = PLAYER_HEIGHT * 2; // Double the original height
+    let drawWidth = PLAYER_WIDTH;
+    let drawHeight = desiredHeight;
+    let drawX = player.x - cameraX;
+    let drawY = player.y - (desiredHeight - PLAYER_HEIGHT); // adjust Y so feet stay on ground
     if (img.complete && img.naturalWidth && img.naturalHeight) {
         const scale = desiredHeight / img.naturalHeight;
+<<<<<<< HEAD
         const drawWidth = img.naturalWidth * scale;
         ctx.imageSmoothingEnabled = false;
         if (playerFacingLeft) {
@@ -124,10 +193,24 @@ function drawPlayer() {
                 desiredHeight
             );
         }
+=======
+        drawWidth = img.naturalWidth * scale;
+        // Pixel art: disable smoothing
+        const prevSmoothing = ctx.imageSmoothingEnabled;
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(
+            img,
+            drawX,
+            drawY,
+            drawWidth,
+            drawHeight
+        );
+        ctx.imageSmoothingEnabled = prevSmoothing;
+>>>>>>> 02f0856 (Add block tower and bucket messes)
     } else {
         // fallback: draw a rectangle if image not loaded
         ctx.fillStyle = '#f44';
-        ctx.fillRect(player.x - cameraX, player.y - PLAYER_HEIGHT, PLAYER_WIDTH, desiredHeight);
+        ctx.fillRect(drawX, drawY, drawWidth, drawHeight);
     }
 }
 
@@ -185,30 +268,93 @@ function drawKitchenBackground() {
         ctx.fill();
     }
 
-    // Table (bottom aligned with ground)
-    let tableX = 350 * 2.5 - bgOffset;
+    // Table (visual only, no ramp)
+    const tableX = 350 * 2.5 - bgOffset;
+    const tableWidth = 500;
+    const tableTopY = groundY - 160;
+    const tableHeight = 40;
+    // Draw table top and legs only
     ctx.fillStyle = '#deb887';
-    ctx.fillRect(tableX, groundY - 100, 250, 25);
+    ctx.fillRect(tableX, tableTopY, tableWidth, tableHeight);
     ctx.fillStyle = '#a0522d';
-    ctx.fillRect(tableX + 25, groundY - 75, 25, 75);
-    ctx.fillRect(tableX + 200, groundY - 75, 25, 75);
+    ctx.fillRect(tableX + 40, tableTopY + tableHeight, 30, 120); // left leg
+    ctx.fillRect(tableX + tableWidth - 70, tableTopY + tableHeight, 30, 120); // right leg
 
-    // Window (above ground, on wall)
-    let windowHeight = 125;
-    let windowY = groundY - 350;
-    let windowX = 200 * 2.5 - bgOffset;
-    ctx.fillStyle = '#bcdffb';
-    ctx.fillRect(windowX, windowY, 175, windowHeight);
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 10;
-    ctx.strokeRect(windowX, windowY, 175, windowHeight);
-    ctx.beginPath();
-    ctx.moveTo(windowX + 87.5, windowY);
-    ctx.lineTo(windowX + 87.5, windowY + windowHeight);
-    ctx.moveTo(windowX, windowY + windowHeight / 2);
-    ctx.lineTo(windowX + 175, windowY + windowHeight / 2);
-    ctx.stroke();
-    ctx.lineWidth = 1;
+    // Block tower (interactable)
+    const towerScreenX = blockTower.x - bgOffset;
+    const towerScreenY = blockTower.y;
+    ctx.save();
+    if (!blockTower.fallen) {
+        // Upright tower: stack of blocks
+        for (let i = 0; i < 4; i++) {
+            ctx.fillStyle = i % 2 === 0 ? '#e3d36b' : '#b45f06';
+            ctx.fillRect(towerScreenX, towerScreenY + i * 30, 40, 30);
+            ctx.strokeStyle = '#333';
+            ctx.strokeRect(towerScreenX, towerScreenY + i * 30, 40, 30);
+        }
+    } else {
+        // Fallen: blocks lying horizontally
+        for (let i = 0; i < 4; i++) {
+            ctx.fillStyle = i % 2 === 0 ? '#e3d36b' : '#b45f06';
+            ctx.fillRect(towerScreenX + i * 30, towerScreenY + 90, 30, 40);
+            ctx.strokeStyle = '#333';
+            ctx.strokeRect(towerScreenX + i * 30, towerScreenY + 90, 30, 40);
+        }
+    }
+    ctx.restore();
+
+    // Bucket (interactable)
+    const bucketScreenX = bucket.x - bgOffset;
+    const bucketScreenY = bucket.y;
+    ctx.save();
+    if (!bucket.fallen) {
+        // Upright bucket
+        ctx.fillStyle = '#b0c4de';
+        ctx.beginPath();
+        ctx.ellipse(bucketScreenX + 40, bucketScreenY + 60, 40, 20, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#4682b4';
+        ctx.fillRect(bucketScreenX, bucketScreenY + 20, 80, 50);
+        ctx.strokeStyle = '#333';
+        ctx.strokeRect(bucketScreenX, bucketScreenY + 20, 80, 50);
+        ctx.beginPath();
+        ctx.ellipse(bucketScreenX + 40, bucketScreenY + 20, 40, 16, 0, 0, Math.PI * 2);
+        ctx.stroke();
+    } else {
+        // Fallen bucket (tipped right) and water
+        ctx.save();
+        ctx.translate(bucketScreenX + 40, bucketScreenY + 80);
+        ctx.rotate(-Math.PI / 4);
+        ctx.fillStyle = '#b0c4de';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 40, 20, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#4682b4';
+        ctx.fillRect(-40, -30, 80, 50);
+        ctx.strokeStyle = '#333';
+        ctx.strokeRect(-40, -30, 80, 50);
+        ctx.beginPath();
+        ctx.ellipse(0, -30, 40, 16, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+        // Water puddle
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = '#00bfff';
+        ctx.beginPath();
+        ctx.ellipse(bucketScreenX + 80, bucketScreenY + bucket.height + 20, 60, 24, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1.0;
+        ctx.restore();
+    }
+    ctx.restore();
+
+    // Draw mess count text in top left
+    ctx.save();
+    ctx.font = '20px monospace';
+    ctx.fillStyle = '#222';
+    ctx.fillText(`Messes: ${messCount()}`, 28, 36);
+    ctx.restore();
 }
 
 function draw() {
