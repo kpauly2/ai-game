@@ -16,6 +16,8 @@ const keys = {};
 // Player animation state
 let playerFrame = 0; // 0 or 1
 let lastPlayerX = 100; // initial player x
+let playerLastFrameSwitch = performance.now(); // last frame switch timestamp
+const PLAYER_FRAME_INTERVAL = 500; // ms
 
 const player = {
     x: 100,
@@ -73,9 +75,15 @@ function updatePlayer() {
     } else if (player.x < cameraX + 100) {
         cameraX = Math.max(0, player.x - 100);
     }
-    // Animation: toggle frame if player moved horizontally
-    if (moved && player.x !== lastPlayerX) {
-        playerFrame = 1 - playerFrame;
+    // Animation: toggle frame if player moved horizontally and interval passed
+    if (moved) {
+        const now = performance.now();
+        if (now - playerLastFrameSwitch >= PLAYER_FRAME_INTERVAL) {
+            playerFrame = 1 - playerFrame;
+            playerLastFrameSwitch = now;
+        }
+    } else {
+        playerFrame = 0; // idle frame (optional: always show frame 0 when not moving)
     }
     lastPlayerX = player.x;
 }
