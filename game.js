@@ -46,14 +46,39 @@ const bucket = {
     fallen: false
 };
 
+// Parent turn state and timers
+let blockTowerParentTurned = false;
+let bucketParentTurned = false;
+
+function scheduleParentTurn(parent) {
+    // parent: 'block' or 'bucket'
+    const minMs = 2000, maxMs = 8000;
+    const nextInterval = Math.random() * (maxMs - minMs) + minMs;
+    setTimeout(() => {
+        if (parent === 'block') {
+            blockTowerParentTurned = !blockTowerParentTurned;
+            scheduleParentTurn('block');
+        } else {
+            bucketParentTurned = !bucketParentTurned;
+            scheduleParentTurn('bucket');
+        }
+    }, nextInterval);
+}
+scheduleParentTurn('block');
+scheduleParentTurn('bucket');
+
+// Track if messes were made while parent was turned
+let blockTowerMessValid = true;
+let bucketMessValid = true;
+
 function isMess() {
-    return blockTower.fallen || bucket.fallen;
+    return (blockTower.fallen && blockTowerMessValid) || (bucket.fallen && bucketMessValid);
 }
 
 function messCount() {
     let count = 0;
-    if (blockTower.fallen) count++;
-    if (bucket.fallen) count++;
+    if (blockTower.fallen && blockTowerMessValid) count++;
+    if (bucket.fallen && bucketMessValid) count++;
     return count;
 }
 
@@ -90,6 +115,7 @@ document.addEventListener('keydown', (e) => {
             player.y < blockTower.y + blockTower.height
         ) {
             blockTower.fallen = true;
+            blockTowerMessValid = !blockTowerParentTurned;
         }
         keys._spaceHandled = true;
     }
@@ -102,6 +128,7 @@ document.addEventListener('keydown', (e) => {
             player.y < bucket.y + bucket.height
         ) {
             bucket.fallen = true;
+            bucketMessValid = !bucketParentTurned;
         }
     }
 });
@@ -304,7 +331,17 @@ function drawKitchenBackground() {
         const parentHeight = 240; // at least 2x baby height
         const scale = parentHeight / parentImg1.naturalHeight;
         const imgW = parentImg1.naturalWidth * scale;
-        ctx.drawImage(parentImg1, towerScreenX + blockTower.width + 20, canvas.height - GROUND_HEIGHT - parentHeight, imgW, parentHeight);
+        if (blockTowerParentTurned) {
+            ctx.save();
+            ctx.scale(-1, 1);
+            ctx.drawImage(parentImg1,
+                -(towerScreenX + blockTower.width + 20 + imgW),
+                canvas.height - GROUND_HEIGHT - parentHeight,
+                imgW, parentHeight);
+            ctx.restore();
+        } else {
+            ctx.drawImage(parentImg1, towerScreenX + blockTower.width + 20, canvas.height - GROUND_HEIGHT - parentHeight, imgW, parentHeight);
+        }
     }
     ctx.restore();
 
@@ -358,7 +395,17 @@ function drawKitchenBackground() {
         const parentHeight = 240;
         const scale = parentHeight / parentImg2.naturalHeight;
         const imgW = parentImg2.naturalWidth * scale;
-        ctx.drawImage(parentImg2, bucketScreenX + bucket.width + 20, bucketScreenY - (parentHeight - bucket.height), imgW, parentHeight);
+        if (bucketParentTurned) {
+            ctx.save();
+            ctx.scale(-1, 1);
+            ctx.drawImage(parentImg2,
+                -(bucketScreenX + bucket.width + 20 + imgW),
+                bucketScreenY - (parentHeight - bucket.height),
+                imgW, parentHeight);
+            ctx.restore();
+        } else {
+            ctx.drawImage(parentImg2, bucketScreenX + bucket.width + 20, bucketScreenY - (parentHeight - bucket.height), imgW, parentHeight);
+        }
     }
     ctx.restore();
 
