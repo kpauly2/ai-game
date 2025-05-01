@@ -84,10 +84,11 @@ function messCount() {
 
 // BAD BABY message state
 let badBabyMessageUntil = 0;
+let gameOver = false;
 
 function showBadBabyMessage() {
-    const duration = 1000 + Math.random() * 1000; // 1-2 seconds
-    badBabyMessageUntil = performance.now() + duration;
+    gameOver = true;
+    badBabyMessageUntil = Infinity; // Message stays up
 }
 
 // Load player images
@@ -112,6 +113,7 @@ const bucketParentIdx = Math.random() < 0.5 ? 0 : 1;
 
 // Input handling
 document.addEventListener('keydown', (e) => {
+    if (gameOver) return;
     keys[e.key] = true;
     // Block tower interaction (spacebar, only on initial press and when overlapping)
     if ((e.key === ' ' || e.code === 'Space') && !blockTower.fallen && !keys._spaceHandled) {
@@ -150,6 +152,7 @@ document.addEventListener('keyup', (e) => {
 });
 
 function updatePlayer() {
+    if (gameOver) return;
     // Horizontal movement
     let moved = false;
     if (keys['ArrowLeft']) {
@@ -433,7 +436,7 @@ function draw() {
     drawGround();
     drawPlayer();
     // Draw BAD BABY message if needed
-    if (performance.now() < badBabyMessageUntil) {
+    if (gameOver || performance.now() < badBabyMessageUntil) {
         ctx.save();
         ctx.font = 'bold 60px sans-serif';
         ctx.fillStyle = '#f44';
@@ -442,6 +445,10 @@ function draw() {
         ctx.shadowColor = '#fff';
         ctx.shadowBlur = 10;
         ctx.fillText('BAD BABY', canvas.width / 2, canvas.height / 2);
+        ctx.font = 'bold 32px sans-serif';
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#222';
+        ctx.fillText('refresh to play again', canvas.width / 2, canvas.height / 2 + 60);
         ctx.restore();
     }
 }
