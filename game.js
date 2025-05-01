@@ -170,7 +170,6 @@ function drawPlayer() {
     let drawY = player.y - (desiredHeight - PLAYER_HEIGHT); // adjust Y so feet stay on ground
     if (img.complete && img.naturalWidth && img.naturalHeight) {
         const scale = desiredHeight / img.naturalHeight;
-<<<<<<< HEAD
         const drawWidth = img.naturalWidth * scale;
         ctx.imageSmoothingEnabled = false;
         if (playerFacingLeft) {
@@ -193,20 +192,6 @@ function drawPlayer() {
                 desiredHeight
             );
         }
-=======
-        drawWidth = img.naturalWidth * scale;
-        // Pixel art: disable smoothing
-        const prevSmoothing = ctx.imageSmoothingEnabled;
-        ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(
-            img,
-            drawX,
-            drawY,
-            drawWidth,
-            drawHeight
-        );
-        ctx.imageSmoothingEnabled = prevSmoothing;
->>>>>>> 02f0856 (Add block tower and bucket messes)
     } else {
         // fallback: draw a rectangle if image not loaded
         ctx.fillStyle = '#f44';
